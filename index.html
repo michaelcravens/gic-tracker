@@ -292,6 +292,17 @@
     transform: rotate(45deg);
   }
   .task-check:hover:not(:checked) { border-color: var(--brand); }
+  .task-num {
+    width: 52px;
+    border: 2px solid var(--border);
+    border-radius: 5px;
+    padding: 2px 4px;
+    font-size: 13px;
+    text-align: center;
+    display: block;
+    margin: 0 auto;
+  }
+  .task-num:focus { outline: none; border-color: var(--brand); }
 
   /* ── FOOTER ── */
   .footer {
@@ -411,23 +422,23 @@ const GROUPS = [
     title: 'Entity Hierarchy',
     items: [
       {
-        id: 'e1', name: 'Three-level entity hierarchy files built', sub: 'Project, Portfolio, Property — one per provider', total: 1,
+        id: 'e1', name: 'Three-level entity hierarchy files built', sub: 'Project, Portfolio, Property — one per provider', total: 15,
         detail: '<strong>What:</strong> Rebuild the April demo entity file (which was two-level) as a full three-level hierarchy — Project (top), Portfolio, Property — for each of the 15 providers.<br><strong>Why:</strong> GIC reviews and submits at the project level. The hierarchy must match that structure before any DST test files or validation rules can run against it.<br><strong>Note:</strong> Do not build at full stress-test scale (5,000 properties per provider) until Engineering confirms the BigQuery landing table format. Coordinate that question before generating files that may need reshaping.'
       },
       {
-        id: 'e2', name: 'Special branches included per file', sub: '5-level MVP branch and 6-level depth limit test', total: 1,
+        id: 'e2', name: 'Special branches included per file', sub: '5-level MVP branch and 6-level depth limit test', total: 30,
         detail: '<strong>What:</strong> Within each hierarchy file include two special branches: one that reaches 5 levels deep (the MVP maximum) and one that attempts a 6th level.<br><strong>Why:</strong> FR-394-01 requires the backend to support up to 5 levels and reject a 6th. These branches make that test deterministic — ADM-07 in the UAT plan walks this exact flow. Without them, the depth limit test has no controlled input.'
       },
       {
-        id: 'e3', name: 'Golden source seed entities included', sub: 'GS-PORT-01/02 and GS-PROP-01 through 04', total: 1,
+        id: 'e3', name: 'Golden source seed entities included', sub: 'GS-PORT-01/02 and GS-PROP-01 through 04', total: 15,
         detail: '<strong>What:</strong> Seed the following known entities into each file:<ul><li>GS-PORT-01: Atlas Core Fund (Portfolio)</li><li>GS-PORT-02: Meridian Growth Fund (Portfolio)</li><li>GS-PROP-01: Atlas Tower NYC | GS-PROP-02: Atlas Plaza Boston</li><li>GS-PROP-03: Atlas Wharf Miami (used as the divested entity in DST-S7)</li><li>GS-PROP-04: Meridian Park LA</li></ul><strong>Why:</strong> These are the "known" entities that unknown entity detection resolves against. Every happy-path DST file and every OPS flow depends on these being present and named consistently.'
       },
       {
-        id: 'e4', name: 'Absent net-new entities included per file', sub: 'NEW-PROP-01 through 05', total: 1,
+        id: 'e4', name: 'Absent net-new entities included per file', sub: 'NEW-PROP-01 through 05', total: 15,
         detail: '<strong>What:</strong> Deliberately exclude NEW-PROP-01 through NEW-PROP-05 from the golden source so the system classifies them as net-new when they appear in a DST submission.<br><strong>Why:</strong> DST-H4, DST-S4, DST-S5, and DST-S6 all rely on predictable unknown entity detection. If these entities were present in the golden source they would resolve immediately and the sad-path tests would not fire.'
       },
       {
-        id: 'e5', name: 'Entity files loaded into BigQuery landing table by Engineering', sub: 'Both environments', total: 1,
+        id: 'e5', name: 'Entity files loaded into BigQuery landing table by Engineering', sub: 'Both environments', total: 2,
         detail: '<strong>What:</strong> Engineering loads the SA-produced entity hierarchy file into the BigQuery landing table that proxies for the GIC golden source connector — in both AppMaster and the GIC single-tenant instance.<br><strong>Why:</strong> This is the prerequisite that makes entity detection work end-to-end. Coordinate the handoff timing explicitly so this is not a last-day bottleneck before the July 3 deadline. Both environments must be loaded before Round 1 begins.'
       },
     ]
@@ -449,7 +460,7 @@ const GROUPS = [
         detail: '<strong>What:</strong> Build the extraction template that maps incoming GL data to the GL target table. If reusing the POC file, confirm the existing ET is compatible with the current DSP version.<br><strong>Why:</strong> DST-S9 tests extraction template mismatch behavior — the ET must be present and version-tagged so that test is reproducible. The ET also needs to be in both environments before providers can submit GL data.'
       },
       {
-        id: 'g4', name: 'GL TT and ET transferred to both environments', sub: '', total: 1,
+        id: 'g4', name: 'GL TT and ET transferred to both environments', sub: '', total: 2,
         detail: '<strong>What:</strong> Transfer the GL target table and extraction template to both AppMaster and the GIC single-tenant instance. Alex Yu handled the uploads for the original POC and has the files — coordinate with him.<br><strong>Why:</strong> Both environments are in scope for UAT. If only one environment has the GL artifacts, GL test files cannot run in the other and Round 1 or Round 2 will be blocked.'
       },
       {
@@ -461,7 +472,7 @@ const GROUPS = [
         detail: '<strong>What:</strong> Build the mapping that links the chart of accounts to the GL target table columns.<br><strong>Why:</strong> The COA mapping tells the DSP how to interpret GL submissions against the account taxonomy. It must be seeded in both environments before any GL submission or GL validation rule can execute correctly.'
       },
       {
-        id: 'g7', name: 'COA and mapping seeded in both environments', sub: '', total: 1,
+        id: 'g7', name: 'COA and mapping seeded in both environments', sub: '', total: 2,
         detail: '<strong>What:</strong> Load the chart of accounts and COA mapping into both AppMaster and the GIC single-tenant instance.<br><strong>Why:</strong> Without seeded COA data in both environments, GL happy and sad path submissions will fail at the wrong layer and obscure whether the test is actually passing or failing. Must be complete before any GL test files are run.'
       },
     ]
@@ -746,12 +757,18 @@ function renderRow(item, rowNum, group) {
   tdOwner.innerHTML = `<select class="owner-select${ownerVal ? '' : ' unassigned'}" id="owner-${item.id}" data-id="${item.id}">${ownerOpts}</select>`;
   tr.appendChild(tdOwner);
 
-  // Checkbox
+  // Input: number if total > 1, checkbox otherwise
   const tdInput = document.createElement('td');
   tdInput.className = 'col-check';
-  tdInput.innerHTML = `<input type="checkbox" class="task-check" id="input-${item.id}"
-    ${done ? 'checked' : ''}
-    data-id="${item.id}" data-group="${group.id}" />`;
+  if (item.total > 1) {
+    tdInput.innerHTML = `<input type="number" class="task-num" id="input-${item.id}"
+      value="${done}" min="0" max="${item.total}"
+      data-id="${item.id}" data-group="${group.id}" data-total="${item.total}" />`;
+  } else {
+    tdInput.innerHTML = `<input type="checkbox" class="task-check" id="input-${item.id}"
+      ${done ? 'checked' : ''}
+      data-id="${item.id}" data-group="${group.id}" />`;
+  }
   tr.appendChild(tdInput);
 
   // Comment button
@@ -906,6 +923,41 @@ document.addEventListener('input', e => {
     setComment(id, val);
     const btn = document.querySelector(`.comment-btn[data-id="${id}"]`);
     if (btn) btn.classList.toggle('has-comment', !!val);
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(saveToGist, 800);
+    return;
+  }
+});
+
+document.addEventListener('input', e => {
+  if (e.target.classList.contains('task-num')) {
+    const inp   = e.target;
+    const id    = inp.dataset.id;
+    const gid   = inp.dataset.group;
+    const total = parseInt(inp.dataset.total, 10);
+    let val = parseInt(inp.value, 10);
+    if (isNaN(val) || val < 0) val = 0;
+    if (val > total) { val = total; inp.value = total; }
+
+    setCount(id, val);
+
+    const pct = total === 0 ? 0 : Math.min(100, Math.round(val / total * 100));
+    const bar = document.getElementById('bar-' + id);
+    bar.style.width = pct + '%';
+    bar.className   = 'bar-fill ' + barColorClass(pct);
+    document.getElementById('bar-label-' + id).textContent = pct + '%';
+
+    if (state[id + '_status'] === undefined) {
+      const statusSel = document.getElementById('badge-' + id);
+      const auto = autoStatus(pct);
+      statusSel.value     = auto;
+      statusSel.className = `status-select s-${auto}`;
+    }
+
+    const group = GROUPS.find(g => g.id === gid);
+    document.getElementById('group-pct-' + gid).textContent = groupPct(group) + '%';
+    updateGlobalStats();
+
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(saveToGist, 800);
     return;
