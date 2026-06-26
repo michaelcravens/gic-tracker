@@ -559,19 +559,19 @@ const GROUPS = [
         detail: '<strong>What:</strong> Review Ben Meyer\'s prior analysis of GIC\'s ~400 validation rules and scope a representative sample set that mirrors the real mix across all required rule categories.<br><strong>Why:</strong> The goal is not to replicate all 400 rules — it\'s to build a sample that exercises every rule type the system supports. Confirm Ben owns Phase 4 or identify who does before Phase 3 completes. This scoping step gates everything else in this group.<br><strong>Note:</strong> Phase 4 cannot begin until Phase 2 item g4 (ET/TT transfer) is complete and target tables exist in the environment.'
       },
       {
-        id: 'r2', name: 'Single-file hard rules built', sub: 'Representative sample — count TBD with Ben', total: 1,
+        id: 'r2', name: 'Single-file hard rules built', sub: '2–3 rules', total: 1,
         detail: '<strong>What:</strong> Build a representative sample of single-file hard validation rules covering required field checks and conditional mandatory field logic. Suggested 2–3 rules is likely sufficient to exercise the behavior — exact count to be confirmed with Ben once r1 scoping is complete.<br><strong>Why:</strong> Hard rules block submission until resolved. The goal is to confirm the rule type works end-to-end, not to replicate GIC\'s full rule set. Used in DST-S1 (missing required field) and FR-394 / FR-407 scripts. Build in AppMaster first; verify each rule fires against DST-H1 before moving on.'
       },
       {
-        id: 'r3', name: 'Cross-file hard rules built', sub: 'Representative sample — count TBD with Ben', total: 1,
+        id: 'r3', name: 'Cross-file hard rules built', sub: '2–3 rules', total: 1,
         detail: '<strong>What:</strong> Build a representative sample of cross-file hard validation rules. The primary example: a property entity present in Property Details must also appear in Acquisitions or Dispositions. Suggested 1–2 rules is likely sufficient — exact count to be confirmed with Ben once r1 scoping is complete.<br><strong>Why:</strong> Cross-file hard rules catch data inconsistencies that single-tab rules cannot see. DST-S4 is specifically designed to trigger this rule type. FR-407-01 (cross-table validations in the EVR) tests this surface. These rules require the cross-table validation infrastructure (YST-6407) to be deployed before they can fire.'
       },
       {
-        id: 'r4', name: 'Soft rules — mandatory comment, reason codes ON, approve/reject ON', sub: 'Representative sample — count TBD with Ben', total: 1,
+        id: 'r4', name: 'Soft rules — mandatory comment, reason codes ON, approve/reject ON', sub: '2–3 rules', total: 1,
         detail: '<strong>What:</strong> Build a representative sample of soft rules with Mandatory Comment ON, Reason Codes ON, and Approve/Reject Required Comments ON. Example: period-over-period ending balance variance beyond a threshold. Suggested 1–2 rules is sufficient to exercise the full feedback loop — exact count to be confirmed with Ben.<br><strong>Why:</strong> This configuration exercises the full soft validation feedback loop (YST-6412) — preparer must select a reason code and add detail, reviewer must approve or reject. DST-H3 and DST-S2/S3 depend on at least one rule of this type being configured via ADM-04.'
       },
       {
-        id: 'r5', name: 'Soft rules — mandatory comment, reason codes OFF', sub: 'Representative sample — count TBD with Ben', total: 1,
+        id: 'r5', name: 'Soft rules — mandatory comment, reason codes OFF', sub: '2–3 rules', total: 1,
         detail: '<strong>What:</strong> Build a representative sample of soft rules with Mandatory Comment ON but Reason Codes OFF. Example: sector breakdown sum tolerance. Suggested 1–2 rules is sufficient to confirm the plain free-text path works — exact count to be confirmed with Ben.<br><strong>Why:</strong> Tests a distinct config path from r4 (FR-412-02 and FR-412-03). The reason code dropdown must not appear when Reason Codes is OFF, and assignment-level scoping must be verified independently.'
       },
       {
