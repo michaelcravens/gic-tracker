@@ -141,6 +141,45 @@
   .badge-in-progress { background: #FDE8EF; color: var(--brand); }
   .badge-complete    { background: #D1FAE5; color: #065F46; }
 
+  /* ── OWNER SELECT ── */
+  .owner-select {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 22px 4px 8px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23A8185E'/%3E%3C/svg%3E") no-repeat right 7px center;
+    background-size: 8px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color .2s;
+    width: 100%;
+  }
+  .owner-select:focus { border-color: var(--brand); }
+  .owner-select.unassigned { color: var(--muted); }
+
+  /* owner chip colors */
+  .owner-pill {
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .pill-alex     { background: #EDE9FE; color: #5B21B6; }
+  .pill-ben      { background: #FEF3C7; color: #92400E; }
+  .pill-sdt      { background: #DBEAFE; color: #1E40AF; }
+  .pill-eng      { background: #D1FAE5; color: #065F46; }
+  .pill-product  { background: #FCE7F3; color: #9D174D; }
+  .pill-none     { background: #F3F4F6; color: var(--muted); }
+
+  .col-owner { width: 120px; }
+
   /* ── NUMBER INPUT ── */
   .count-wrap { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
   .count-input {
@@ -256,6 +295,19 @@ const GIST_ID    = 'YOUR_GIST_ID_HERE';
 const GIST_FILE  = 'gic_tracker.json';
 
 // ─────────────────────────────────────────────
+//  OWNERS
+// ─────────────────────────────────────────────
+const OWNERS = [
+  { value: '',         label: '— Unassigned',  pill: 'pill-none' },
+  { value: 'alex',     label: 'Alex Yu',        pill: 'pill-alex' },
+  { value: 'ben',      label: 'Ben Meyer',      pill: 'pill-ben' },
+  { value: 'sdt',      label: 'SDT',            pill: 'pill-sdt' },
+  { value: 'eng',      label: 'Engineering',    pill: 'pill-eng' },
+  { value: 'product',  label: 'Product',        pill: 'pill-product' },
+];
+function ownerMeta(value) { return OWNERS.find(o => o.value === value) || OWNERS[0]; }
+
+// ─────────────────────────────────────────────
 //  DATA DEFINITIONS
 // ─────────────────────────────────────────────
 const GROUPS = [
@@ -334,10 +386,12 @@ const GROUPS = [
 // ─────────────────────────────────────────────
 //  STATE
 // ─────────────────────────────────────────────
-let state = {}; // { [itemId]: doneCount }
+let state = {}; // { [itemId]: doneCount, [itemId+'_owner']: ownerValue }
 
 function getCount(id) { return state[id] || 0; }
 function setCount(id, val) { state[id] = val; }
+function getOwner(id) { return state[id + '_owner'] || ''; }
+function setOwner(id, val) { state[id + '_owner'] = val; }
 
 // ─────────────────────────────────────────────
 //  RENDER
@@ -388,6 +442,7 @@ function renderGroup(group) {
     <th class="col-name">Deliverable</th>
     <th class="col-bar">Progress</th>
     <th class="col-badge">Status</th>
+    <th class="col-owner">Owner</th>
     <th class="col-input">Done / Total</th>
   </tr>`;
   table.appendChild(thead);
@@ -435,6 +490,16 @@ function renderRow(item, rowNum, group) {
   tdBadge.className = 'col-badge';
   tdBadge.innerHTML = `<span class="badge ${badgeClass(pct)}" id="badge-${item.id}">${badgeText(pct)}</span>`;
   tr.appendChild(tdBadge);
+
+  // Owner
+  const tdOwner = document.createElement('td');
+  tdOwner.className = 'col-owner';
+  const ownerVal = getOwner(item.id);
+  const ownerOpts = OWNERS.map(o =>
+    `<option value="${o.value}"${o.value === ownerVal ? ' selected' : ''}>${o.label}</option>`
+  ).join('');
+  tdOwner.innerHTML = `<select class="owner-select${ownerVal ? '' : ' unassigned'}" id="owner-${item.id}" data-id="${item.id}">${ownerOpts}</select>`;
+  tr.appendChild(tdOwner);
 
   // Input
   const tdInput = document.createElement('td');
@@ -501,6 +566,16 @@ function updateGlobalStats() {
 //  INPUT HANDLER — live update then debounce save
 // ─────────────────────────────────────────────
 let debounceTimer = null;
+
+document.addEventListener('change', e => {
+  const sel = e.target;
+  if (!sel.classList.contains('owner-select')) return;
+  const id = sel.dataset.id;
+  setOwner(id, sel.value);
+  sel.classList.toggle('unassigned', !sel.value);
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(saveToGist, 800);
+});
 
 document.addEventListener('input', e => {
   const input = e.target;
@@ -605,6 +680,10 @@ function applyState(parsed) {
   GROUPS.forEach(g => g.items.forEach(item => {
     if (parsed[item.id] !== undefined) {
       state[item.id] = parsed[item.id];
+    }
+    const ownerKey = item.id + '_owner';
+    if (parsed[ownerKey] !== undefined) {
+      state[ownerKey] = parsed[ownerKey];
     }
   }));
   // Re-render with loaded state
