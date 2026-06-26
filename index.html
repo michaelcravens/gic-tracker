@@ -107,12 +107,12 @@
   }
   .deliverable-table tr:last-child td { border-bottom: none; }
 
-  .col-num   { width: 32px; }
-  .col-name  { width: 30%; }
-  .col-bar   { width: 18%; min-width: 120px; }
-  .col-badge { width: 130px; }
-  .col-owner { width: 150px; }
-  .col-input { width: 96px; text-align: right; }
+  .col-num     { width: 32px; }
+  .col-name    { width: 34%; }
+  .col-bar     { width: 20%; min-width: 120px; }
+  .col-badge   { width: 130px; }
+  .col-owner   { width: 150px; }
+  .col-check   { width: 60px; text-align: center; }
   .col-comment { width: 34px; }
 
   .row-num { color: var(--muted); font-size: 12px; font-weight: 600; }
@@ -265,24 +265,33 @@
   }
   .comment-textarea:focus { border-color: var(--brand); }
 
-  /* ── NUMBER INPUT ── */
-  .count-wrap { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
-  .count-input {
-    width: 54px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 4px 6px;
-    font-family: 'Montserrat', sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-    text-align: center;
-    color: var(--text);
+  /* ── TASK CHECKBOX ── */
+  .task-check {
+    width: 20px; height: 20px;
+    appearance: none; -webkit-appearance: none;
+    border: 2px solid var(--border);
+    border-radius: 5px;
     background: #fff;
-    outline: none;
-    transition: border-color .2s;
+    cursor: pointer;
+    display: block;
+    margin: 0 auto;
+    transition: background .2s, border-color .2s;
+    position: relative;
   }
-  .count-input:focus { border-color: var(--brand); }
-  .count-total { font-size: 12px; color: var(--muted); }
+  .task-check:checked {
+    background: var(--green);
+    border-color: var(--green);
+  }
+  .task-check:checked::after {
+    content: '';
+    position: absolute;
+    left: 4px; top: 1px;
+    width: 8px; height: 12px;
+    border: 2px solid #fff;
+    border-top: none; border-left: none;
+    transform: rotate(45deg);
+  }
+  .task-check:hover:not(:checked) { border-color: var(--brand); }
 
   /* ── FOOTER ── */
   .footer {
@@ -344,9 +353,9 @@
       <div class="stat-sub">of all deliverables</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Items Complete</div>
+      <div class="stat-label">Tasks Complete</div>
       <div class="stat-value" id="stat-items">0 / 0</div>
-      <div class="stat-sub">units done of total</div>
+      <div class="stat-sub">tasks done of total</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Days to Deadline</div>
@@ -402,23 +411,23 @@ const GROUPS = [
     title: 'Entity Hierarchy',
     items: [
       {
-        id: 'e1', name: 'Three-level entity hierarchy files built', sub: 'Project, Portfolio, Property — one per provider', total: 15,
+        id: 'e1', name: 'Three-level entity hierarchy files built', sub: 'Project, Portfolio, Property — one per provider', total: 1,
         detail: '<strong>What:</strong> Rebuild the April demo entity file (which was two-level) as a full three-level hierarchy — Project (top), Portfolio, Property — for each of the 15 providers.<br><strong>Why:</strong> GIC reviews and submits at the project level. The hierarchy must match that structure before any DST test files or validation rules can run against it.<br><strong>Note:</strong> Do not build at full stress-test scale (5,000 properties per provider) until Engineering confirms the BigQuery landing table format. Coordinate that question before generating files that may need reshaping.'
       },
       {
-        id: 'e2', name: 'Special branches included per file', sub: '5-level MVP branch and 6-level depth limit test', total: 30,
+        id: 'e2', name: 'Special branches included per file', sub: '5-level MVP branch and 6-level depth limit test', total: 1,
         detail: '<strong>What:</strong> Within each hierarchy file include two special branches: one that reaches 5 levels deep (the MVP maximum) and one that attempts a 6th level.<br><strong>Why:</strong> FR-394-01 requires the backend to support up to 5 levels and reject a 6th. These branches make that test deterministic — ADM-07 in the UAT plan walks this exact flow. Without them, the depth limit test has no controlled input.'
       },
       {
-        id: 'e3', name: 'Golden source seed entities included', sub: 'GS-PORT-01/02 and GS-PROP-01 through 04', total: 15,
+        id: 'e3', name: 'Golden source seed entities included', sub: 'GS-PORT-01/02 and GS-PROP-01 through 04', total: 1,
         detail: '<strong>What:</strong> Seed the following known entities into each file:<ul><li>GS-PORT-01: Atlas Core Fund (Portfolio)</li><li>GS-PORT-02: Meridian Growth Fund (Portfolio)</li><li>GS-PROP-01: Atlas Tower NYC | GS-PROP-02: Atlas Plaza Boston</li><li>GS-PROP-03: Atlas Wharf Miami (used as the divested entity in DST-S7)</li><li>GS-PROP-04: Meridian Park LA</li></ul><strong>Why:</strong> These are the "known" entities that unknown entity detection resolves against. Every happy-path DST file and every OPS flow depends on these being present and named consistently.'
       },
       {
-        id: 'e4', name: 'Absent net-new entities included per file', sub: 'NEW-PROP-01 through 05', total: 15,
+        id: 'e4', name: 'Absent net-new entities included per file', sub: 'NEW-PROP-01 through 05', total: 1,
         detail: '<strong>What:</strong> Deliberately exclude NEW-PROP-01 through NEW-PROP-05 from the golden source so the system classifies them as net-new when they appear in a DST submission.<br><strong>Why:</strong> DST-H4, DST-S4, DST-S5, and DST-S6 all rely on predictable unknown entity detection. If these entities were present in the golden source they would resolve immediately and the sad-path tests would not fire.'
       },
       {
-        id: 'e5', name: 'Entity files loaded into BigQuery landing table by Engineering', sub: 'Both environments', total: 2,
+        id: 'e5', name: 'Entity files loaded into BigQuery landing table by Engineering', sub: 'Both environments', total: 1,
         detail: '<strong>What:</strong> Engineering loads the SA-produced entity hierarchy file into the BigQuery landing table that proxies for the GIC golden source connector — in both AppMaster and the GIC single-tenant instance.<br><strong>Why:</strong> This is the prerequisite that makes entity detection work end-to-end. Coordinate the handoff timing explicitly so this is not a last-day bottleneck before the July 3 deadline. Both environments must be loaded before Round 1 begins.'
       },
     ]
@@ -440,7 +449,7 @@ const GROUPS = [
         detail: '<strong>What:</strong> Build the extraction template that maps incoming GL data to the GL target table. If reusing the POC file, confirm the existing ET is compatible with the current DSP version.<br><strong>Why:</strong> DST-S9 tests extraction template mismatch behavior — the ET must be present and version-tagged so that test is reproducible. The ET also needs to be in both environments before providers can submit GL data.'
       },
       {
-        id: 'g4', name: 'GL TT and ET transferred to both environments', sub: '', total: 2,
+        id: 'g4', name: 'GL TT and ET transferred to both environments', sub: '', total: 1,
         detail: '<strong>What:</strong> Transfer the GL target table and extraction template to both AppMaster and the GIC single-tenant instance. Alex Yu handled the uploads for the original POC and has the files — coordinate with him.<br><strong>Why:</strong> Both environments are in scope for UAT. If only one environment has the GL artifacts, GL test files cannot run in the other and Round 1 or Round 2 will be blocked.'
       },
       {
@@ -452,7 +461,7 @@ const GROUPS = [
         detail: '<strong>What:</strong> Build the mapping that links the chart of accounts to the GL target table columns.<br><strong>Why:</strong> The COA mapping tells the DSP how to interpret GL submissions against the account taxonomy. It must be seeded in both environments before any GL submission or GL validation rule can execute correctly.'
       },
       {
-        id: 'g7', name: 'COA and mapping seeded in both environments', sub: '', total: 2,
+        id: 'g7', name: 'COA and mapping seeded in both environments', sub: '', total: 1,
         detail: '<strong>What:</strong> Load the chart of accounts and COA mapping into both AppMaster and the GIC single-tenant instance.<br><strong>Why:</strong> Without seeded COA data in both environments, GL happy and sad path submissions will fail at the wrong layer and obscure whether the test is actually passing or failing. Must be complete before any GL test files are run.'
       },
     ]
@@ -536,7 +545,7 @@ const GROUPS = [
         detail: '<strong>What:</strong> Build one GL file that contains typical GL rule violations — e.g., an account code not in the COA, a missing required amount field, or a period mismatch.<br><strong>Why:</strong> Validates that GL validation rules fire and block or flag correctly. The SA plan specifies this as the minimum viable sad path. Used alongside the happy path file to confirm both the pass and block states work before committing to full stress-test volume.'
       },
       {
-        id: 'gt3', name: 'Stress-test GL files built', sub: 'One per property entity, 15 providers, scope TBD', total: 75000,
+        id: 'gt3', name: 'Stress-test GL files built', sub: 'One per property entity, 15 providers, scope TBD', total: 1,
         detail: '<strong>What:</strong> At full scope: one GL file per property entity across all 15 providers (5,000 properties × 15 = 75,000 files).<br><strong>Why:</strong> Yuri specified full stress testing requires one GL file per property entity. However, the SA plan flags this as a scope question: the single-provider end-to-end test may be sufficient for Round 2, with load testing handled separately.<br><strong>Action required:</strong> Do not build at this volume until Product confirms whether 75,000 files are required before July 3 or whether the single-provider test is the Round 2 target. This answer materially changes SA\'s data generation scope.'
       },
     ]
@@ -550,19 +559,19 @@ const GROUPS = [
         detail: '<strong>What:</strong> Review Ben Meyer\'s prior analysis of GIC\'s ~400 validation rules and scope a representative sample set that mirrors the real mix across all required rule categories.<br><strong>Why:</strong> The goal is not to replicate all 400 rules — it\'s to build a sample that exercises every rule type the system supports. Confirm Ben owns Phase 4 or identify who does before Phase 3 completes. This scoping step gates everything else in this group.<br><strong>Note:</strong> Phase 4 cannot begin until Phase 2 item g4 (ET/TT transfer) is complete and target tables exist in the environment.'
       },
       {
-        id: 'r2', name: 'Single-file hard rules built', sub: '', total: 10,
+        id: 'r2', name: 'Single-file hard rules built', sub: '', total: 1,
         detail: '<strong>What:</strong> Build 10 single-file hard validation rules covering required field checks and conditional mandatory field logic.<br><strong>Why:</strong> Hard rules block submission until resolved. These are the most critical rules to get right — a broken hard rule either lets bad data through or blocks valid submissions. Used in DST-S1 (missing required field) and FR-394 / FR-407 scripts. Build in AppMaster first; verify each rule fires against DST-H1 before moving on.'
       },
       {
-        id: 'r3', name: 'Cross-file hard rules built', sub: '', total: 5,
+        id: 'r3', name: 'Cross-file hard rules built', sub: '', total: 1,
         detail: '<strong>What:</strong> Build 5 cross-file hard validation rules. The primary example: a property entity present in Property Details must also appear in Acquisitions or Dispositions.<br><strong>Why:</strong> Cross-file hard rules catch data inconsistencies that single-tab rules cannot see. DST-S4 is specifically designed to trigger this rule type. FR-407-01 (cross-table validations in the EVR) tests this surface. These rules require the cross-table validation infrastructure (YST-6407) to be deployed before they can fire.'
       },
       {
-        id: 'r4', name: 'Soft rules — mandatory comment, reason codes ON, approve/reject ON', sub: '', total: 5,
+        id: 'r4', name: 'Soft rules — mandatory comment, reason codes ON, approve/reject ON', sub: '', total: 1,
         detail: '<strong>What:</strong> Build 5 soft validation rules with Mandatory Comment ON, Reason Codes ON, and Approve/Reject Required Comments ON. Example: period-over-period ending balance variance beyond a threshold.<br><strong>Why:</strong> This configuration exercises the full soft validation feedback loop (YST-6412) — preparer must select a reason code and add detail, reviewer must approve or reject. DST-H3 and DST-S2/S3 depend on at least one rule of this type being configured via ADM-04.'
       },
       {
-        id: 'r5', name: 'Soft rules — mandatory comment, reason codes OFF', sub: '', total: 5,
+        id: 'r5', name: 'Soft rules — mandatory comment, reason codes OFF', sub: '', total: 1,
         detail: '<strong>What:</strong> Build 5 soft validation rules with Mandatory Comment ON but Reason Codes OFF. Example: sector breakdown sum tolerance.<br><strong>Why:</strong> Tests the plain free-text comment path (FR-412-02 and FR-412-03). The reason code dropdown must not appear when Reason Codes is OFF. This is a separate config path from r4 and must be verified independently to confirm assignment-level scoping works correctly.'
       },
       {
@@ -662,7 +671,7 @@ function renderGroup(group) {
     <th class="col-bar">Progress</th>
     <th class="col-badge">Status</th>
     <th class="col-owner">Owner</th>
-    <th class="col-input">Done / Total</th>
+    <th class="col-check" style="text-align:center">Done</th>
     <th class="col-comment"></th>
   </tr>`;
   table.appendChild(thead);
@@ -737,16 +746,12 @@ function renderRow(item, rowNum, group) {
   tdOwner.innerHTML = `<select class="owner-select${ownerVal ? '' : ' unassigned'}" id="owner-${item.id}" data-id="${item.id}">${ownerOpts}</select>`;
   tr.appendChild(tdOwner);
 
-  // Input
+  // Checkbox
   const tdInput = document.createElement('td');
-  tdInput.className = 'col-input';
-  tdInput.innerHTML = `
-    <div class="count-wrap">
-      <input type="number" class="count-input" id="input-${item.id}"
-        min="0" max="${item.total}" value="${done}"
-        data-id="${item.id}" data-total="${item.total}" data-group="${group.id}" />
-      <span class="count-total">/ ${item.total.toLocaleString()}</span>
-    </div>`;
+  tdInput.className = 'col-check';
+  tdInput.innerHTML = `<input type="checkbox" class="task-check" id="input-${item.id}"
+    ${done ? 'checked' : ''}
+    data-id="${item.id}" data-group="${group.id}" />`;
   tr.appendChild(tdInput);
 
   // Comment button
@@ -905,43 +910,38 @@ document.addEventListener('input', e => {
     debounceTimer = setTimeout(saveToGist, 800);
     return;
   }
+});
 
-  const input = e.target;
-  if (!input.classList.contains('count-input')) return;
+document.addEventListener('change', e => {
+  if (e.target.classList.contains('task-check')) {
+    const cb  = e.target;
+    const id  = cb.dataset.id;
+    const gid = cb.dataset.group;
+    const val = cb.checked ? 1 : 0;
 
-  const id    = input.dataset.id;
-  const total = parseInt(input.dataset.total, 10);
-  const gid   = input.dataset.group;
-  let val = parseInt(input.value, 10);
-  if (isNaN(val) || val < 0) val = 0;
-  if (val > total) val = total;
+    setCount(id, val);
 
-  setCount(id, val);
+    const pct = val * 100;
+    const bar = document.getElementById('bar-' + id);
+    bar.style.width = pct + '%';
+    bar.className   = 'bar-fill ' + barColorClass(pct);
+    document.getElementById('bar-label-' + id).textContent = pct + '%';
 
-  // Live-update bar, status, label
-  const pct = Math.round(val / total * 100);
-  const bar = document.getElementById('bar-' + id);
-  bar.style.width = pct + '%';
-  bar.className   = 'bar-fill ' + barColorClass(pct);
-  document.getElementById('bar-label-' + id).textContent = pct + '%';
-  // Only auto-update status if user hasn't manually set it
-  if (state[id + '_status'] === undefined) {
-    const statusSel = document.getElementById('badge-' + id);
-    const auto = autoStatus(pct);
-    statusSel.value     = auto;
-    statusSel.className = `status-select s-${auto}`;
+    if (state[id + '_status'] === undefined) {
+      const statusSel = document.getElementById('badge-' + id);
+      const auto = autoStatus(pct);
+      statusSel.value     = auto;
+      statusSel.className = `status-select s-${auto}`;
+    }
+
+    const group = GROUPS.find(g => g.id === gid);
+    document.getElementById('group-pct-' + gid).textContent = groupPct(group) + '%';
+    updateGlobalStats();
+
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(saveToGist, 800);
+    return;
   }
-
-  // Update group pct
-  const group = GROUPS.find(g => g.id === gid);
-  document.getElementById('group-pct-' + gid).textContent = groupPct(group) + '%';
-
-  // Update global stats
-  updateGlobalStats();
-
-  // Debounced gist save
-  clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(saveToGist, 800);
 });
 
 // ─────────────────────────────────────────────
