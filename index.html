@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GIC LP Workflow UAT — SA Deliverables Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --brand:   #A8185E;
+    --blush:   #FBF1F2;
+    --border:  #E2B0C2;
+    --amber:   #B45309;
+    --green:   #2D7D46;
+    --gray:    #6B7280;
+    --text:    #1F1F1F;
+    --muted:   #6B7280;
+  }
+
+  body {
+    font-family: 'Montserrat', sans-serif;
+    background: var(--blush);
+    color: var(--text);
+    font-size: 14px;
+    min-height: 100vh;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    background: var(--brand);
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 24px;
+    height: 52px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(168,24,94,.25);
+  }
+  .topbar-left { font-weight: 700; font-size: 16px; letter-spacing: .5px; }
+  .topbar-right { font-size: 13px; font-weight: 500; opacity: .9; }
+
+  /* ── MAIN CONTENT ── */
+  .main { max-width: 1100px; margin: 0 auto; padding: 24px 20px 60px; }
+
+  /* ── STAT CARDS ── */
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .stat-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); }
+  .stat-value { font-size: 28px; font-weight: 700; color: var(--brand); line-height: 1; }
+  .stat-value.red    { color: #DC2626; }
+  .stat-value.amber  { color: var(--amber); }
+  .stat-value.normal { color: var(--brand); }
+  .stat-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* ── SECTION HEADER ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 32px 0 14px;
+  }
+  .section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--brand);
+    white-space: nowrap;
+  }
+  .section-rule { flex: 1; border: none; border-top: 1px solid var(--border); }
+  .section-pct {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--brand);
+    white-space: nowrap;
+  }
+
+  /* ── TABLE ── */
+  .deliverable-table { width: 100%; border-collapse: collapse; }
+  .deliverable-table th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .7px;
+    color: var(--muted);
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .deliverable-table td {
+    padding: 10px 10px;
+    border-bottom: 1px solid #f3dce4;
+    vertical-align: middle;
+  }
+  .deliverable-table tr:last-child td { border-bottom: none; }
+
+  .col-num   { width: 36px; }
+  .col-name  { width: 38%; }
+  .col-bar   { width: 28%; }
+  .col-badge { width: 100px; }
+  .col-input { width: 96px; text-align: right; }
+
+  .row-num { color: var(--muted); font-size: 12px; font-weight: 600; }
+
+  .row-name { font-weight: 600; font-size: 13px; }
+  .row-sub  { font-size: 11.5px; color: var(--muted); margin-top: 2px; font-weight: 400; }
+
+  /* ── PROGRESS BAR ── */
+  .bar-wrap { background: #EEE; border-radius: 999px; height: 10px; overflow: hidden; }
+  .bar-fill  { height: 100%; border-radius: 999px; transition: width .35s ease, background .35s ease; }
+  .bar-fill.pct-0    { background: var(--gray); }
+  .bar-fill.pct-low  { background: var(--brand); }
+  .bar-fill.pct-mid  { background: var(--amber); }
+  .bar-fill.pct-full { background: var(--green); }
+  .bar-label { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  /* ── BADGE ── */
+  .badge {
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  .badge-not-started { background: #F3F4F6; color: var(--gray); }
+  .badge-in-progress { background: #FDE8EF; color: var(--brand); }
+  .badge-complete    { background: #D1FAE5; color: #065F46; }
+
+  /* ── NUMBER INPUT ── */
+  .count-wrap { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
+  .count-input {
+    width: 54px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 6px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    color: var(--text);
+    background: #fff;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .count-input:focus { border-color: var(--brand); }
+  .count-total { font-size: 12px; color: var(--muted); }
+
+  /* ── FOOTER ── */
+  .footer {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: #fff;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 24px;
+    font-size: 12px;
+    color: var(--muted);
+    z-index: 99;
+  }
+  .sync-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--brand);
+    opacity: 0;
+    transition: opacity .3s;
+  }
+  .sync-indicator.active { opacity: 1; }
+  .sync-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--brand);
+    animation: pulse 1s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50%      { opacity: .3; }
+  }
+
+  /* ── TABLE WRAP CARD ── */
+  .group-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">Cherre</div>
+  <div class="topbar-right">GIC LP Workflow UAT &nbsp;|&nbsp; SA Deliverables Tracker</div>
+</div>
+
+<div class="main">
+  <!-- STAT CARDS -->
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-label">Overall Progress</div>
+      <div class="stat-value" id="stat-pct">0%</div>
+      <div class="stat-sub">of all deliverables</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Items Complete</div>
+      <div class="stat-value" id="stat-items">0 / 0</div>
+      <div class="stat-sub">units done of total</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Days to Deadline</div>
+      <div class="stat-value normal" id="stat-days">—</div>
+      <div class="stat-sub">July 3 2026 deadline</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Testing Starts</div>
+      <div class="stat-value normal" id="stat-testing" style="font-size:18px;padding-top:5px">July 6, 2026</div>
+      <div class="stat-sub">UAT kick-off date</div>
+    </div>
+  </div>
+
+  <!-- GROUPS rendered by JS -->
+  <div id="groups-container"></div>
+</div>
+
+<div class="footer">
+  <div id="last-updated">Last updated: —</div>
+  <div class="sync-indicator" id="sync-indicator">
+    <div class="sync-dot"></div> Syncing…
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+//  CONFIG — replace these with your values
+// ─────────────────────────────────────────────
+const GIST_TOKEN = 'YOUR_GIST_TOKEN_HERE';
+const GIST_ID    = 'YOUR_GIST_ID_HERE';
+const GIST_FILE  = 'gic_tracker.json';
+
+// ─────────────────────────────────────────────
+//  DATA DEFINITIONS
+// ─────────────────────────────────────────────
+const GROUPS = [
+  {
+    id: 'entity',
+    title: 'Entity Hierarchy',
+    items: [
+      { id: 'e1', name: 'Three-level entity hierarchy files built', sub: 'Project, Portfolio, Property — one per provider', total: 15 },
+      { id: 'e2', name: 'Special branches included per file', sub: '5-level MVP branch and 6-level depth limit test', total: 30 },
+      { id: 'e3', name: 'Golden source seed entities included', sub: 'GS-PORT-01/02 and GS-PROP-01 through 04', total: 15 },
+      { id: 'e4', name: 'Absent net-new entities included per file', sub: 'NEW-PROP-01 through 05', total: 15 },
+      { id: 'e5', name: 'Entity files loaded into BigQuery landing table by Engineering', sub: 'Both environments', total: 2 },
+    ]
+  },
+  {
+    id: 'gl',
+    title: 'GL Data Artifacts',
+    items: [
+      { id: 'g1', name: 'GL file decision made', sub: 'Reuse POC or build fresh', total: 1 },
+      { id: 'g2', name: 'GL target table built', sub: '', total: 1 },
+      { id: 'g3', name: 'GL extraction template built', sub: '', total: 1 },
+      { id: 'g4', name: 'GL TT and ET transferred to both environments', sub: '', total: 2 },
+      { id: 'g5', name: 'Chart of accounts built', sub: '', total: 1 },
+      { id: 'g6', name: 'COA mapping built', sub: '', total: 1 },
+      { id: 'g7', name: 'COA and mapping seeded in both environments', sub: '', total: 2 },
+    ]
+  },
+  {
+    id: 'dst',
+    title: 'DST Test Files',
+    items: [
+      { id: 'd1',  name: 'DST-H1', sub: 'Clean happy path — all known entities', total: 1 },
+      { id: 'd2',  name: 'DST-H2', sub: 'Multi-tab multi-project batch', total: 1 },
+      { id: 'd3',  name: 'DST-H3', sub: 'Triggers mandatory soft comment rule', total: 1 },
+      { id: 'd4',  name: 'DST-H4', sub: 'Contains legitimate unknown entities', total: 1 },
+      { id: 'd5',  name: 'DST-S1', sub: 'Missing required field', total: 1 },
+      { id: 'd6',  name: 'DST-S2', sub: 'Mandatory soft comment not provided', total: 1 },
+      { id: 'd7',  name: 'DST-S3', sub: 'Reviewer comment rejection flow', total: 1 },
+      { id: 'd8',  name: 'DST-S4', sub: 'Net-new entity missing from Acquisitions and Dispositions tabs', total: 1 },
+      { id: 'd9',  name: 'DST-S5', sub: 'Unresolved unknown entity blocks reviewer approval', total: 1 },
+      { id: 'd10', name: 'DST-S6', sub: 'Illegitimate placeholder entity — mark as invalid test', total: 1 },
+      { id: 'd11', name: 'DST-S7', sub: 'Known property flagged as divested', total: 1 },
+      { id: 'd12', name: 'DST-S8', sub: 'Exceeds upload file or tab limit', total: 1 },
+      { id: 'd13', name: 'DST-S9', sub: 'Extraction template mismatch', total: 1 },
+      { id: 'd14', name: 'DST-S10', sub: 'Re-upload against already-submitted entity', total: 1 },
+      { id: 'd15', name: 'DST-S11', sub: '5000 entity volume file — performance test', total: 1 },
+    ]
+  },
+  {
+    id: 'gltest',
+    title: 'GL Test Files',
+    items: [
+      { id: 'gt1', name: 'GL happy path file built', sub: '', total: 1 },
+      { id: 'gt2', name: 'GL sad path file built', sub: '', total: 1 },
+      { id: 'gt3', name: 'Stress-test GL files built', sub: 'One per property entity, 15 providers, scope TBD', total: 75000 },
+    ]
+  },
+  {
+    id: 'rules',
+    title: 'Validation Rules',
+    items: [
+      { id: 'r1',  name: 'Rule categories analyzed and sample set scoped', sub: '', total: 1 },
+      { id: 'r2',  name: 'Single-file hard rules built', sub: '', total: 10 },
+      { id: 'r3',  name: 'Cross-file hard rules built', sub: '', total: 5 },
+      { id: 'r4',  name: 'Soft rules — mandatory comment, reason codes ON, approve/reject ON', sub: '', total: 5 },
+      { id: 'r5',  name: 'Soft rules — mandatory comment, reason codes OFF', sub: '', total: 5 },
+      { id: 'r6',  name: 'Self-service single-table rule v1.0', sub: '', total: 1 },
+      { id: 'r7',  name: 'Self-service cross-table rule v2.0', sub: '', total: 1 },
+      { id: 'r8',  name: 'Self-service period-over-period rule v2.0', sub: '', total: 1 },
+      { id: 'r9',  name: 'Period check rule built', sub: '', total: 1 },
+      { id: 'r10', name: 'All rules verified against happy path DST files', sub: '', total: 1 },
+    ]
+  }
+];
+
+// ─────────────────────────────────────────────
+//  STATE
+// ─────────────────────────────────────────────
+let state = {}; // { [itemId]: doneCount }
+
+function getCount(id) { return state[id] || 0; }
+function setCount(id, val) { state[id] = val; }
+
+// ─────────────────────────────────────────────
+//  RENDER
+// ─────────────────────────────────────────────
+function renderAll() {
+  const container = document.getElementById('groups-container');
+  container.innerHTML = '';
+
+  GROUPS.forEach(group => {
+    container.appendChild(renderGroup(group));
+  });
+
+  updateGlobalStats();
+}
+
+function renderGroup(group) {
+  const wrapper = document.createElement('div');
+
+  // Header
+  const header = document.createElement('div');
+  header.className = 'section-header';
+
+  const title = document.createElement('span');
+  title.className = 'section-title';
+  title.textContent = group.title;
+
+  const rule = document.createElement('hr');
+  rule.className = 'section-rule';
+
+  const pct = document.createElement('span');
+  pct.className = 'section-pct';
+  pct.id = `group-pct-${group.id}`;
+  pct.textContent = groupPct(group) + '%';
+
+  header.append(title, rule, pct);
+  wrapper.appendChild(header);
+
+  // Card + table
+  const card = document.createElement('div');
+  card.className = 'group-card';
+
+  const table = document.createElement('table');
+  table.className = 'deliverable-table';
+
+  const thead = document.createElement('thead');
+  thead.innerHTML = `<tr>
+    <th class="col-num">#</th>
+    <th class="col-name">Deliverable</th>
+    <th class="col-bar">Progress</th>
+    <th class="col-badge">Status</th>
+    <th class="col-input">Done / Total</th>
+  </tr>`;
+  table.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  group.items.forEach((item, idx) => {
+    tbody.appendChild(renderRow(item, idx + 1, group));
+  });
+  table.appendChild(tbody);
+  card.appendChild(table);
+  wrapper.appendChild(card);
+
+  return wrapper;
+}
+
+function renderRow(item, rowNum, group) {
+  const done  = getCount(item.id);
+  const pct   = item.total === 0 ? 0 : Math.min(100, Math.round(done / item.total * 100));
+
+  const tr = document.createElement('tr');
+
+  // #
+  const tdNum = document.createElement('td');
+  tdNum.className = 'col-num';
+  tdNum.innerHTML = `<span class="row-num">${rowNum}</span>`;
+  tr.appendChild(tdNum);
+
+  // Name
+  const tdName = document.createElement('td');
+  tdName.className = 'col-name';
+  tdName.innerHTML = `<div class="row-name">${item.name}</div>${item.sub ? `<div class="row-sub">${item.sub}</div>` : ''}`;
+  tr.appendChild(tdName);
+
+  // Bar
+  const tdBar = document.createElement('td');
+  tdBar.className = 'col-bar';
+  const barClass = barColorClass(pct);
+  tdBar.innerHTML = `
+    <div class="bar-wrap"><div class="bar-fill ${barClass}" id="bar-${item.id}" style="width:${pct}%"></div></div>
+    <div class="bar-label" id="bar-label-${item.id}">${pct}%</div>`;
+  tr.appendChild(tdBar);
+
+  // Badge
+  const tdBadge = document.createElement('td');
+  tdBadge.className = 'col-badge';
+  tdBadge.innerHTML = `<span class="badge ${badgeClass(pct)}" id="badge-${item.id}">${badgeText(pct)}</span>`;
+  tr.appendChild(tdBadge);
+
+  // Input
+  const tdInput = document.createElement('td');
+  tdInput.className = 'col-input';
+  tdInput.innerHTML = `
+    <div class="count-wrap">
+      <input type="number" class="count-input" id="input-${item.id}"
+        min="0" max="${item.total}" value="${done}"
+        data-id="${item.id}" data-total="${item.total}" data-group="${group.id}" />
+      <span class="count-total">/ ${item.total.toLocaleString()}</span>
+    </div>`;
+  tr.appendChild(tdInput);
+
+  return tr;
+}
+
+// ─────────────────────────────────────────────
+//  HELPERS
+// ─────────────────────────────────────────────
+function barColorClass(pct) {
+  if (pct === 0)   return 'pct-0';
+  if (pct === 100) return 'pct-full';
+  if (pct >= 50)   return 'pct-mid';
+  return 'pct-low';
+}
+function badgeClass(pct) {
+  if (pct === 0)   return 'badge-not-started';
+  if (pct === 100) return 'badge-complete';
+  return 'badge-in-progress';
+}
+function badgeText(pct) {
+  if (pct === 0)   return 'Not started';
+  if (pct === 100) return 'Complete';
+  return 'In progress';
+}
+
+function groupPct(group) {
+  let done = 0, total = 0;
+  group.items.forEach(item => { done += getCount(item.id); total += item.total; });
+  if (total === 0) return 0;
+  return Math.round(done / total * 100);
+}
+
+function updateGlobalStats() {
+  let done = 0, total = 0;
+  GROUPS.forEach(g => g.items.forEach(item => {
+    done  += getCount(item.id);
+    total += item.total;
+  }));
+  const pct = total === 0 ? 0 : Math.round(done / total * 100);
+  document.getElementById('stat-pct').textContent   = pct + '%';
+  document.getElementById('stat-items').textContent = done.toLocaleString() + ' / ' + total.toLocaleString();
+
+  // Days to deadline
+  const deadline = new Date('2026-07-03T23:59:59');
+  const now      = new Date();
+  const diff     = Math.ceil((deadline - now) / 86400000);
+  const daysEl   = document.getElementById('stat-days');
+  daysEl.textContent = diff > 0 ? diff : 0;
+  daysEl.className   = 'stat-value ' + (diff <= 0 ? 'red' : diff < 5 ? 'red' : diff < 10 ? 'amber' : 'normal');
+}
+
+// ─────────────────────────────────────────────
+//  INPUT HANDLER — live update then debounce save
+// ─────────────────────────────────────────────
+let debounceTimer = null;
+
+document.addEventListener('input', e => {
+  const input = e.target;
+  if (!input.classList.contains('count-input')) return;
+
+  const id    = input.dataset.id;
+  const total = parseInt(input.dataset.total, 10);
+  const gid   = input.dataset.group;
+  let val = parseInt(input.value, 10);
+  if (isNaN(val) || val < 0) val = 0;
+  if (val > total) val = total;
+
+  setCount(id, val);
+
+  // Live-update bar, badge, label
+  const pct = Math.round(val / total * 100);
+  const bar = document.getElementById('bar-' + id);
+  bar.style.width = pct + '%';
+  bar.className   = 'bar-fill ' + barColorClass(pct);
+  document.getElementById('bar-label-' + id).textContent = pct + '%';
+  document.getElementById('badge-' + id).className   = 'badge ' + badgeClass(pct);
+  document.getElementById('badge-' + id).textContent = badgeText(pct);
+
+  // Update group pct
+  const group = GROUPS.find(g => g.id === gid);
+  document.getElementById('group-pct-' + gid).textContent = groupPct(group) + '%';
+
+  // Update global stats
+  updateGlobalStats();
+
+  // Debounced gist save
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(saveToGist, 800);
+});
+
+// ─────────────────────────────────────────────
+//  GIST I/O
+// ─────────────────────────────────────────────
+function showSync(active) {
+  document.getElementById('sync-indicator').classList.toggle('active', active);
+}
+
+function stateWithMeta() {
+  return { ...state, _updated: new Date().toISOString() };
+}
+
+async function saveToGist() {
+  if (!GIST_TOKEN || GIST_TOKEN === 'YOUR_GIST_TOKEN_HERE') {
+    saveToLocal();
+    return;
+  }
+  showSync(true);
+  try {
+    const payload = stateWithMeta();
+    await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `token ${GIST_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        files: { [GIST_FILE]: { content: JSON.stringify(payload, null, 2) } }
+      })
+    });
+    saveToLocal();
+    document.getElementById('last-updated').textContent =
+      'Last updated: ' + new Date().toLocaleString();
+  } catch (err) {
+    console.error('Gist save failed', err);
+    saveToLocal();
+  } finally {
+    showSync(false);
+  }
+}
+
+async function loadFromGist() {
+  if (!GIST_TOKEN || GIST_TOKEN === 'YOUR_GIST_TOKEN_HERE') {
+    loadFromLocal();
+    return;
+  }
+  try {
+    const res  = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+      headers: { Authorization: `token ${GIST_TOKEN}` }
+    });
+    const data = await res.json();
+    const raw  = data.files?.[GIST_FILE]?.content;
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      applyState(parsed);
+      if (parsed._updated) {
+        document.getElementById('last-updated').textContent =
+          'Last updated: ' + new Date(parsed._updated).toLocaleString();
+      }
+    }
+  } catch (err) {
+    console.warn('Gist load failed, falling back to localStorage', err);
+    loadFromLocal();
+  }
+}
+
+function applyState(parsed) {
+  GROUPS.forEach(g => g.items.forEach(item => {
+    if (parsed[item.id] !== undefined) {
+      state[item.id] = parsed[item.id];
+    }
+  }));
+  // Re-render with loaded state
+  renderAll();
+}
+
+// ─────────────────────────────────────────────
+//  LOCALSTORAGE FALLBACK
+// ─────────────────────────────────────────────
+function saveToLocal() {
+  localStorage.setItem('gic_tracker', JSON.stringify(stateWithMeta()));
+}
+function loadFromLocal() {
+  try {
+    const raw = localStorage.getItem('gic_tracker');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      applyState(parsed);
+      if (parsed._updated) {
+        document.getElementById('last-updated').textContent =
+          'Last updated (local): ' + new Date(parsed._updated).toLocaleString();
+      }
+    }
+  } catch (_) {}
+}
+
+// ─────────────────────────────────────────────
+//  BOOT
+// ─────────────────────────────────────────────
+renderAll();
+loadFromGist();
+</script>
+</body>
+</html>
