@@ -173,12 +173,42 @@
   }
   .pill-alex     { background: #EDE9FE; color: #5B21B6; }
   .pill-ben      { background: #FEF3C7; color: #92400E; }
+  .pill-mike     { background: #E0F2FE; color: #0C4A6E; }
   .pill-sdt      { background: #DBEAFE; color: #1E40AF; }
   .pill-eng      { background: #D1FAE5; color: #065F46; }
   .pill-product  { background: #FCE7F3; color: #9D174D; }
   .pill-none     { background: #F3F4F6; color: var(--muted); }
 
-  .col-owner { width: 120px; }
+  .col-owner  { width: 120px; }
+  .col-toggle { width: 32px; }
+
+  /* ── DETAIL PANEL ── */
+  .detail-toggle {
+    background: none; border: none; cursor: pointer;
+    color: var(--muted); font-size: 14px; padding: 2px 4px;
+    border-radius: 4px; transition: color .2s, background .2s;
+    line-height: 1;
+  }
+  .detail-toggle:hover { color: var(--brand); background: #fde8ef; }
+  .detail-toggle.open  { color: var(--brand); }
+
+  .detail-row td {
+    padding: 0 !important;
+    border-bottom: 1px solid #f3dce4 !important;
+  }
+  .detail-panel {
+    display: none;
+    background: #fdf6f8;
+    padding: 12px 16px 14px 52px;
+    font-size: 12.5px;
+    color: #4B5563;
+    line-height: 1.65;
+    border-top: 1px dashed var(--border);
+  }
+  .detail-panel.open { display: block; }
+  .detail-panel strong { color: var(--brand); font-weight: 600; }
+  .detail-panel ul { margin: 6px 0 0 16px; }
+  .detail-panel li { margin-bottom: 3px; }
 
   /* ── NUMBER INPUT ── */
   .count-wrap { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
@@ -299,6 +329,7 @@ const GIST_FILE  = 'gic_tracker.json';
 // ─────────────────────────────────────────────
 const OWNERS = [
   { value: '',         label: '— Unassigned',  pill: 'pill-none' },
+  { value: 'mike',     label: 'Mike Cravens',   pill: 'pill-mike' },
   { value: 'alex',     label: 'Alex Yu',        pill: 'pill-alex' },
   { value: 'ben',      label: 'Ben Meyer',      pill: 'pill-ben' },
   { value: 'sdt',      label: 'SDT',            pill: 'pill-sdt' },
@@ -315,70 +346,190 @@ const GROUPS = [
     id: 'entity',
     title: 'Entity Hierarchy',
     items: [
-      { id: 'e1', name: 'Three-level entity hierarchy files built', sub: 'Project, Portfolio, Property — one per provider', total: 15 },
-      { id: 'e2', name: 'Special branches included per file', sub: '5-level MVP branch and 6-level depth limit test', total: 30 },
-      { id: 'e3', name: 'Golden source seed entities included', sub: 'GS-PORT-01/02 and GS-PROP-01 through 04', total: 15 },
-      { id: 'e4', name: 'Absent net-new entities included per file', sub: 'NEW-PROP-01 through 05', total: 15 },
-      { id: 'e5', name: 'Entity files loaded into BigQuery landing table by Engineering', sub: 'Both environments', total: 2 },
+      {
+        id: 'e1', name: 'Three-level entity hierarchy files built', sub: 'Project, Portfolio, Property — one per provider', total: 15,
+        detail: '<strong>What:</strong> Rebuild the April demo entity file (which was two-level) as a full three-level hierarchy — Project (top), Portfolio, Property — for each of the 15 providers.<br><strong>Why:</strong> GIC reviews and submits at the project level. The hierarchy must match that structure before any DST test files or validation rules can run against it.<br><strong>Note:</strong> Do not build at full stress-test scale (5,000 properties per provider) until Engineering confirms the BigQuery landing table format. Coordinate that question before generating files that may need reshaping.'
+      },
+      {
+        id: 'e2', name: 'Special branches included per file', sub: '5-level MVP branch and 6-level depth limit test', total: 30,
+        detail: '<strong>What:</strong> Within each hierarchy file include two special branches: one that reaches 5 levels deep (the MVP maximum) and one that attempts a 6th level.<br><strong>Why:</strong> FR-394-01 requires the backend to support up to 5 levels and reject a 6th. These branches make that test deterministic — ADM-07 in the UAT plan walks this exact flow. Without them, the depth limit test has no controlled input.'
+      },
+      {
+        id: 'e3', name: 'Golden source seed entities included', sub: 'GS-PORT-01/02 and GS-PROP-01 through 04', total: 15,
+        detail: '<strong>What:</strong> Seed the following known entities into each file:<ul><li>GS-PORT-01: Atlas Core Fund (Portfolio)</li><li>GS-PORT-02: Meridian Growth Fund (Portfolio)</li><li>GS-PROP-01: Atlas Tower NYC | GS-PROP-02: Atlas Plaza Boston</li><li>GS-PROP-03: Atlas Wharf Miami (used as the divested entity in DST-S7)</li><li>GS-PROP-04: Meridian Park LA</li></ul><strong>Why:</strong> These are the "known" entities that unknown entity detection resolves against. Every happy-path DST file and every OPS flow depends on these being present and named consistently.'
+      },
+      {
+        id: 'e4', name: 'Absent net-new entities included per file', sub: 'NEW-PROP-01 through 05', total: 15,
+        detail: '<strong>What:</strong> Deliberately exclude NEW-PROP-01 through NEW-PROP-05 from the golden source so the system classifies them as net-new when they appear in a DST submission.<br><strong>Why:</strong> DST-H4, DST-S4, DST-S5, and DST-S6 all rely on predictable unknown entity detection. If these entities were present in the golden source they would resolve immediately and the sad-path tests would not fire.'
+      },
+      {
+        id: 'e5', name: 'Entity files loaded into BigQuery landing table by Engineering', sub: 'Both environments', total: 2,
+        detail: '<strong>What:</strong> Engineering loads the SA-produced entity hierarchy file into the BigQuery landing table that proxies for the GIC golden source connector — in both AppMaster and the GIC single-tenant instance.<br><strong>Why:</strong> This is the prerequisite that makes entity detection work end-to-end. Coordinate the handoff timing explicitly so this is not a last-day bottleneck before the July 3 deadline. Both environments must be loaded before Round 1 begins.'
+      },
     ]
   },
   {
     id: 'gl',
     title: 'GL Data Artifacts',
     items: [
-      { id: 'g1', name: 'GL file decision made', sub: 'Reuse POC or build fresh', total: 1 },
-      { id: 'g2', name: 'GL target table built', sub: '', total: 1 },
-      { id: 'g3', name: 'GL extraction template built', sub: '', total: 1 },
-      { id: 'g4', name: 'GL TT and ET transferred to both environments', sub: '', total: 2 },
-      { id: 'g5', name: 'Chart of accounts built', sub: '', total: 1 },
-      { id: 'g6', name: 'COA mapping built', sub: '', total: 1 },
-      { id: 'g7', name: 'COA and mapping seeded in both environments', sub: '', total: 2 },
+      {
+        id: 'g1', name: 'GL file decision made', sub: 'Reuse POC or build fresh', total: 1,
+        detail: '<strong>What:</strong> Victor committed to sharing the original GL file from the year-old GIC POC. Review it and decide: reuse or rebuild.<ul><li><strong>Reuse</strong> if the file is coherent enough to support a target table and ET. Saves time but the schema reflects whatever GIC sent a year ago.</li><li><strong>Build fresh</strong> if it is too messy (Victor described it as a mix of trial balance and GL). Align to USA L2 format: DST plus granular GL transactions.</li></ul><strong>Why:</strong> This decision gates all GL work in Phase 3. Make it before starting any GL artifacts — every downstream item depends on it.'
+      },
+      {
+        id: 'g2', name: 'GL target table built', sub: '', total: 1,
+        detail: '<strong>What:</strong> Build the target table definition for the GL dataset that will be submitted alongside the DST. If reusing the POC file, confirm the existing TT is still valid rather than rebuilding from scratch.<br><strong>Why:</strong> The GL TT must exist in the environment before Engineering can load GL data and before validation rules can reference GL fields. This is a prerequisite for the GL test files and for Phase 4 rule building.'
+      },
+      {
+        id: 'g3', name: 'GL extraction template built', sub: '', total: 1,
+        detail: '<strong>What:</strong> Build the extraction template that maps incoming GL data to the GL target table. If reusing the POC file, confirm the existing ET is compatible with the current DSP version.<br><strong>Why:</strong> DST-S9 tests extraction template mismatch behavior — the ET must be present and version-tagged so that test is reproducible. The ET also needs to be in both environments before providers can submit GL data.'
+      },
+      {
+        id: 'g4', name: 'GL TT and ET transferred to both environments', sub: '', total: 2,
+        detail: '<strong>What:</strong> Transfer the GL target table and extraction template to both AppMaster and the GIC single-tenant instance. Alex Yu handled the uploads for the original POC and has the files — coordinate with him.<br><strong>Why:</strong> Both environments are in scope for UAT. If only one environment has the GL artifacts, GL test files cannot run in the other and Round 1 or Round 2 will be blocked.'
+      },
+      {
+        id: 'g5', name: 'Chart of accounts built', sub: '', total: 1,
+        detail: '<strong>What:</strong> Build the chart of accounts for the GL dataset. This is the reference list of account codes that GL data maps against.<br><strong>Why:</strong> The COA is required before the COA mapping can be built and before COA-dependent validation rules can fire. Treat the GL TT, ET, COA, and COA mapping as a single logical unit of work per the SA plan.'
+      },
+      {
+        id: 'g6', name: 'COA mapping built', sub: '', total: 1,
+        detail: '<strong>What:</strong> Build the mapping that links the chart of accounts to the GL target table columns.<br><strong>Why:</strong> The COA mapping tells the DSP how to interpret GL submissions against the account taxonomy. It must be seeded in both environments before any GL submission or GL validation rule can execute correctly.'
+      },
+      {
+        id: 'g7', name: 'COA and mapping seeded in both environments', sub: '', total: 2,
+        detail: '<strong>What:</strong> Load the chart of accounts and COA mapping into both AppMaster and the GIC single-tenant instance.<br><strong>Why:</strong> Without seeded COA data in both environments, GL happy and sad path submissions will fail at the wrong layer and obscure whether the test is actually passing or failing. Must be complete before any GL test files are run.'
+      },
     ]
   },
   {
     id: 'dst',
     title: 'DST Test Files',
     items: [
-      { id: 'd1',  name: 'DST-H1', sub: 'Clean happy path — all known entities', total: 1 },
-      { id: 'd2',  name: 'DST-H2', sub: 'Multi-tab multi-project batch', total: 1 },
-      { id: 'd3',  name: 'DST-H3', sub: 'Triggers mandatory soft comment rule', total: 1 },
-      { id: 'd4',  name: 'DST-H4', sub: 'Contains legitimate unknown entities', total: 1 },
-      { id: 'd5',  name: 'DST-S1', sub: 'Missing required field', total: 1 },
-      { id: 'd6',  name: 'DST-S2', sub: 'Mandatory soft comment not provided', total: 1 },
-      { id: 'd7',  name: 'DST-S3', sub: 'Reviewer comment rejection flow', total: 1 },
-      { id: 'd8',  name: 'DST-S4', sub: 'Net-new entity missing from Acquisitions and Dispositions tabs', total: 1 },
-      { id: 'd9',  name: 'DST-S5', sub: 'Unresolved unknown entity blocks reviewer approval', total: 1 },
-      { id: 'd10', name: 'DST-S6', sub: 'Illegitimate placeholder entity — mark as invalid test', total: 1 },
-      { id: 'd11', name: 'DST-S7', sub: 'Known property flagged as divested', total: 1 },
-      { id: 'd12', name: 'DST-S8', sub: 'Exceeds upload file or tab limit', total: 1 },
-      { id: 'd13', name: 'DST-S9', sub: 'Extraction template mismatch', total: 1 },
-      { id: 'd14', name: 'DST-S10', sub: 'Re-upload against already-submitted entity', total: 1 },
-      { id: 'd15', name: 'DST-S11', sub: '5000 entity volume file — performance test', total: 1 },
+      {
+        id: 'd1', name: 'DST-H1', sub: 'Clean happy path — all known entities', total: 1,
+        detail: '<strong>Scenario:</strong> Single project, all known golden source entities, clean data with no validation issues.<br><strong>Expected outcome:</strong> Submits and approves end-to-end with zero validation failures.<br><strong>Why it matters:</strong> This is the baseline happy path used in E2E-H-03 and E2E-H-04. Every other test result is interpreted relative to this file passing cleanly. Build from the April demo DST structure, regenerated with the three-level hierarchy.'
+      },
+      {
+        id: 'd2', name: 'DST-H2', sub: 'Multi-tab multi-project batch', total: 1,
+        detail: '<strong>Scenario:</strong> Multi-project batch across Atlas Core Fund portfolio — all known entities, complex multi-tab upload.<br><strong>Expected outcome:</strong> Per-project submit and approve across the full hierarchy batch.<br><strong>Why it matters:</strong> Tests the complex bulk upload path (YST-6408) and confirms the hierarchy sidebar, All Entities view, and project-level submission all work together at batch scale. Used in PRE-01 through PRE-05 and REV flows.'
+      },
+      {
+        id: 'd3', name: 'DST-H3', sub: 'Triggers mandatory soft comment rule', total: 1,
+        detail: '<strong>Scenario:</strong> Submission where a soft validation rule fires and the preparer must supply a reason code and comment before submitting.<br><strong>Expected outcome:</strong> Soft feedback loop completes (preparer comments, reviewer approves), submission then proceeds.<br><strong>Why it matters:</strong> Tests the full soft validation feedback loop end-to-end (YST-6412). Used in PRE-04, REV-02, and REV-06. The mandatory comment toggle and reason code config (ADM-04) must be in place before this file can be run.'
+      },
+      {
+        id: 'd4', name: 'DST-H4', sub: 'Contains legitimate unknown entities', total: 1,
+        detail: '<strong>Scenario:</strong> Net-new property NEW-PROP-01 flagged new in column D, with configured sibling properties in the same project.<br><strong>Expected outcome:</strong> Placeholder ID assigned, sibling auto-config applied, entity resolves when golden source syncs.<br><strong>Why it matters:</strong> Tests the full unknown entity lifecycle (YST-6420): detection, placeholder assignment, auto-config, dashboard surfacing, and ID swap on sync. Used in E2E-H-05 and all OPS flows.'
+      },
+      {
+        id: 'd5', name: 'DST-S1', sub: 'Missing required field', total: 1,
+        detail: '<strong>Scenario:</strong> A required field on the Property Details tab is left blank.<br><strong>Expected outcome:</strong> Submit button is disabled with a tooltip until the field is resolved. Once corrected, Submit enables.<br><strong>Why it matters:</strong> Validates the hard validation gate (YST-6403 Story 1 AC). A broken hard validation gate is a Critical defect — it would allow bad data to egress. Used in PRE-06 and E2E-S-01.'
+      },
+      {
+        id: 'd6', name: 'DST-S2', sub: 'Mandatory soft comment not provided', total: 1,
+        detail: '<strong>Scenario:</strong> A soft rule with Mandatory Comment ON fires, but the preparer attempts to submit without providing a comment.<br><strong>Expected outcome:</strong> Submission gate blocks with a clear message; KPI shows the outstanding required comment count. Gate clears once the comment is supplied.<br><strong>Why it matters:</strong> Tests the soft validation submission gate (YST-6412 Epic 2). Used in PRE-07 and E2E-S-02.'
+      },
+      {
+        id: 'd7', name: 'DST-S3', sub: 'Reviewer comment rejection flow', total: 1,
+        detail: '<strong>Scenario:</strong> Preparer submits a comment on a soft rule. Reviewer rejects it with a reason.<br><strong>Expected outcome:</strong> Comment shows Rejected in red; preparer is forced to supply a mandatory follow-up comment before the submission state resolves. No re-upload required.<br><strong>Why it matters:</strong> Tests the reject-and-follow-up path (YST-6412 Epic 2 and 3). Used in PRE-10, REV-02, and E2E-S-03.'
+      },
+      {
+        id: 'd8', name: 'DST-S4', sub: 'Net-new entity missing from Acquisitions and Dispositions tabs', total: 1,
+        detail: '<strong>Scenario:</strong> A net-new entity appears in Property Details but is absent from both Acquisitions and Dispositions tabs.<br><strong>Expected outcome:</strong> Cross-tab hard validation failure is raised; preparer cannot advance until the entity is present in all required tabs.<br><strong>Why it matters:</strong> Tests cross-tab hard validation (YST-6420 Story 1 FR-420-04). Used in PRE-09 and E2E-S-04. This is a critical data integrity check — missing this would allow inconsistent entity data to proceed.'
+      },
+      {
+        id: 'd9', name: 'DST-S5', sub: 'Unresolved unknown entity blocks reviewer approval', total: 1,
+        detail: '<strong>Scenario:</strong> A net-new entity is submitted but never masterized in the golden source.<br><strong>Expected outcome:</strong> Project shows Pending - Unknown Entities. Reviewer Approve button is disabled with a tooltip. Egress stays blocked until a real ID is assigned.<br><strong>Why it matters:</strong> Tests the egress block on unresolved entities (YST-6403 Story 3, YST-6420 Story 3). Used in REV-05 and E2E-S-05. Ensures bad data cannot leave the system.'
+      },
+      {
+        id: 'd10', name: 'DST-S6', sub: 'Illegitimate placeholder entity — mark as invalid test', total: 1,
+        detail: '<strong>Scenario:</strong> A placeholder entity that should not exist appears in an open submission (e.g., a test artifact or data entry error).<br><strong>Expected outcome:</strong> GIC Operations marks it as invalid in the dashboard; the entity is removed from the open submission without closing or forcing a resubmit.<br><strong>Why it matters:</strong> Tests the Mark as Invalid flow (YST-6420 Story 3). Used in OPS-05 and E2E-S-06. Critical for operational hygiene — GIC needs a clean way to remove garbage entities without disrupting live submissions.'
+      },
+      {
+        id: 'd11', name: 'DST-S7', sub: 'Known property flagged as divested', total: 1,
+        detail: '<strong>Scenario:</strong> GS-PROP-03 (Atlas Wharf Miami) is flagged as divested in column G of Property Details.<br><strong>Expected outcome:</strong> Entity classified as divested, surfaced in the Unknown Entities dashboard under the divested filter, submission stays non-blocking. Clears on golden source sync.<br><strong>Why it matters:</strong> Tests divested entity detection (YST-6420 Story 1). Used in OPS-03, OPS-06, and E2E-S-09. Divested handling is a GIC-specific operational requirement.'
+      },
+      {
+        id: 'd12', name: 'DST-S8', sub: 'Exceeds upload file or tab limit', total: 1,
+        detail: '<strong>Scenario:</strong> A file that exceeds the maximum number of upload files or tabs allowed per submission.<br><strong>Expected outcome:</strong> Upload is blocked with a clear limit message; no partial ingest occurs.<br><strong>Why it matters:</strong> Tests upload limit enforcement (YST-6408 YST-6432). Used in PRE-08, E2E-S-07. A silent partial ingest here would be a data integrity issue and a Critical defect.'
+      },
+      {
+        id: 'd13', name: 'DST-S9', sub: 'Extraction template mismatch', total: 1,
+        detail: '<strong>Scenario:</strong> A DST file built against a different or outdated extraction template version is uploaded.<br><strong>Expected outcome:</strong> "Contact Models Library Admin" modal appears; ingest does not proceed.<br><strong>Why it matters:</strong> Tests template mismatch handling (YST-6408 YST-6517). Used in PRE-08 and E2E-S-07. This is a common real-world issue when providers use old templates — the error modal must be clear and ingest must halt cleanly.'
+      },
+      {
+        id: 'd14', name: 'DST-S10', sub: 'Re-upload against already-submitted entity', total: 1,
+        detail: '<strong>Scenario:</strong> A DST file is uploaded for an entity that has already been submitted in a previous batch.<br><strong>Expected outcome:</strong> Ingestion is silently skipped; no duplicate entity or data is created.<br><strong>Why it matters:</strong> Tests the re-upload skip behavior (YST-6408). Used in PRE-08 and E2E-S-07. Duplicate ingestion would corrupt downstream GL reconciliation and reporting.'
+      },
+      {
+        id: 'd15', name: 'DST-S11', sub: '5,000 entity volume file — performance test', total: 1,
+        detail: '<strong>Scenario:</strong> A single DST file containing 5,000 entities — the maximum scale target for the system.<br><strong>Expected outcome:</strong> EVR and Properties page both render within the performance target. Pagination works. Backend permission filter stays intact. Select All at 500 rows-per-page behaves correctly.<br><strong>Why it matters:</strong> Tests scalability (YST-6458, YST-6494). Used in E2E-S-08. GIC\'s real volume will approach this scale. A performance regression here blocks go-live.'
+      },
     ]
   },
   {
     id: 'gltest',
     title: 'GL Test Files',
     items: [
-      { id: 'gt1', name: 'GL happy path file built', sub: '', total: 1 },
-      { id: 'gt2', name: 'GL sad path file built', sub: '', total: 1 },
-      { id: 'gt3', name: 'Stress-test GL files built', sub: 'One per property entity, 15 providers, scope TBD', total: 75000 },
+      {
+        id: 'gt1', name: 'GL happy path file built', sub: '', total: 1,
+        detail: '<strong>What:</strong> Build one GL file that submits cleanly against the GL target table — all accounts map correctly, all required fields present, period is correct.<br><strong>Why:</strong> This is the baseline input for the GL portion of the single-provider end-to-end test. Every GL validation rule must be verified against this file passing cleanly before testing sad paths. Build from the same GL schema decision made in g1.'
+      },
+      {
+        id: 'gt2', name: 'GL sad path file built', sub: '', total: 1,
+        detail: '<strong>What:</strong> Build one GL file that contains typical GL rule violations — e.g., an account code not in the COA, a missing required amount field, or a period mismatch.<br><strong>Why:</strong> Validates that GL validation rules fire and block or flag correctly. The SA plan specifies this as the minimum viable sad path. Used alongside the happy path file to confirm both the pass and block states work before committing to full stress-test volume.'
+      },
+      {
+        id: 'gt3', name: 'Stress-test GL files built', sub: 'One per property entity, 15 providers, scope TBD', total: 75000,
+        detail: '<strong>What:</strong> At full scope: one GL file per property entity across all 15 providers (5,000 properties × 15 = 75,000 files).<br><strong>Why:</strong> Yuri specified full stress testing requires one GL file per property entity. However, the SA plan flags this as a scope question: the single-provider end-to-end test may be sufficient for Round 2, with load testing handled separately.<br><strong>Action required:</strong> Do not build at this volume until Product confirms whether 75,000 files are required before July 3 or whether the single-provider test is the Round 2 target. This answer materially changes SA\'s data generation scope.'
+      },
     ]
   },
   {
     id: 'rules',
     title: 'Validation Rules',
     items: [
-      { id: 'r1',  name: 'Rule categories analyzed and sample set scoped', sub: '', total: 1 },
-      { id: 'r2',  name: 'Single-file hard rules built', sub: '', total: 10 },
-      { id: 'r3',  name: 'Cross-file hard rules built', sub: '', total: 5 },
-      { id: 'r4',  name: 'Soft rules — mandatory comment, reason codes ON, approve/reject ON', sub: '', total: 5 },
-      { id: 'r5',  name: 'Soft rules — mandatory comment, reason codes OFF', sub: '', total: 5 },
-      { id: 'r6',  name: 'Self-service single-table rule v1.0', sub: '', total: 1 },
-      { id: 'r7',  name: 'Self-service cross-table rule v2.0', sub: '', total: 1 },
-      { id: 'r8',  name: 'Self-service period-over-period rule v2.0', sub: '', total: 1 },
-      { id: 'r9',  name: 'Period check rule built', sub: '', total: 1 },
-      { id: 'r10', name: 'All rules verified against happy path DST files', sub: '', total: 1 },
+      {
+        id: 'r1', name: 'Rule categories analyzed and sample set scoped', sub: '', total: 1,
+        detail: '<strong>What:</strong> Review Ben Meyer\'s prior analysis of GIC\'s ~400 validation rules and scope a representative sample set that mirrors the real mix across all required rule categories.<br><strong>Why:</strong> The goal is not to replicate all 400 rules — it\'s to build a sample that exercises every rule type the system supports. Confirm Ben owns Phase 4 or identify who does before Phase 3 completes. This scoping step gates everything else in this group.<br><strong>Note:</strong> Phase 4 cannot begin until Phase 2 item g4 (ET/TT transfer) is complete and target tables exist in the environment.'
+      },
+      {
+        id: 'r2', name: 'Single-file hard rules built', sub: '', total: 10,
+        detail: '<strong>What:</strong> Build 10 single-file hard validation rules covering required field checks and conditional mandatory field logic.<br><strong>Why:</strong> Hard rules block submission until resolved. These are the most critical rules to get right — a broken hard rule either lets bad data through or blocks valid submissions. Used in DST-S1 (missing required field) and FR-394 / FR-407 scripts. Build in AppMaster first; verify each rule fires against DST-H1 before moving on.'
+      },
+      {
+        id: 'r3', name: 'Cross-file hard rules built', sub: '', total: 5,
+        detail: '<strong>What:</strong> Build 5 cross-file hard validation rules. The primary example: a property entity present in Property Details must also appear in Acquisitions or Dispositions.<br><strong>Why:</strong> Cross-file hard rules catch data inconsistencies that single-tab rules cannot see. DST-S4 is specifically designed to trigger this rule type. FR-407-01 (cross-table validations in the EVR) tests this surface. These rules require the cross-table validation infrastructure (YST-6407) to be deployed before they can fire.'
+      },
+      {
+        id: 'r4', name: 'Soft rules — mandatory comment, reason codes ON, approve/reject ON', sub: '', total: 5,
+        detail: '<strong>What:</strong> Build 5 soft validation rules with Mandatory Comment ON, Reason Codes ON, and Approve/Reject Required Comments ON. Example: period-over-period ending balance variance beyond a threshold.<br><strong>Why:</strong> This configuration exercises the full soft validation feedback loop (YST-6412) — preparer must select a reason code and add detail, reviewer must approve or reject. DST-H3 and DST-S2/S3 depend on at least one rule of this type being configured via ADM-04.'
+      },
+      {
+        id: 'r5', name: 'Soft rules — mandatory comment, reason codes OFF', sub: '', total: 5,
+        detail: '<strong>What:</strong> Build 5 soft validation rules with Mandatory Comment ON but Reason Codes OFF. Example: sector breakdown sum tolerance.<br><strong>Why:</strong> Tests the plain free-text comment path (FR-412-02 and FR-412-03). The reason code dropdown must not appear when Reason Codes is OFF. This is a separate config path from r4 and must be verified independently to confirm assignment-level scoping works correctly.'
+      },
+      {
+        id: 'r6', name: 'Self-service single-table rule v1.0', sub: '', total: 1,
+        detail: '<strong>What:</strong> Create one custom single-table validation rule using the v1.0 self-service UI. The rule should save, the review and edit views should render, and a validation report should generate.<br><strong>Why:</strong> Tests YST-5958 (FR-595-01). Used in ADM-05, E2E-H-06, and the DST-H5 happy path. Self-service validation is a delivered feature that must be regression-tested within the LP workflow context to confirm it still works after the LP changes.'
+      },
+      {
+        id: 'r7', name: 'Self-service cross-table rule v2.0', sub: '', total: 1,
+        detail: '<strong>What:</strong> Create one custom cross-table validation rule using the v2.0 self-service UI. The rule should save and be assignable to a dataset in the hierarchy.<br><strong>Why:</strong> Tests YST-6085 (FR-608-01). Used in ADM-05 and E2E-H-06. The v2.0 cross-table capability is a closed epic but must be verified within the LP workflow submission context — cross-table rules interact with the new hierarchy structure.'
+      },
+      {
+        id: 'r8', name: 'Self-service period-over-period rule v2.0', sub: '', total: 1,
+        detail: '<strong>What:</strong> Create one custom period-over-period rule using the v2.0 self-service UI. Verify the AI assistant integration is available where enabled.<br><strong>Why:</strong> Tests YST-6085 (FR-608-02). Used in ADM-05 and E2E-H-06. Period-over-period rules are a common GIC validation pattern. Confirming this works correctly in the LP workflow context is part of the client-fit validation Round 2 exists to deliver.'
+      },
+      {
+        id: 'r9', name: 'Period check rule built', sub: '', total: 1,
+        detail: '<strong>What:</strong> Build a period check rule that confirms the submission is for the correct reporting period (e.g., the file\'s period column matches the expected reporting period for the batch).<br><strong>Why:</strong> Period errors are one of the most common submission mistakes in practice. This rule type is listed separately in the SA plan as a required rule category. Verify it fires correctly on the sad path (a DST submitted for the wrong period) and passes cleanly on DST-H1.'
+      },
+      {
+        id: 'r10', name: 'All rules verified against happy path DST files', sub: '', total: 1,
+        detail: '<strong>What:</strong> Run DST-H1 (and DST-H2 where applicable) through all built validation rules in AppMaster and confirm every rule produces the expected result — hard rules pass, soft rules surface but do not block, self-service rules report correctly.<br><strong>Why:</strong> This is the exit gate for Phase 4. A rule that incorrectly fires on a clean happy-path file is a blocking defect. Per the SA plan: if any bugs appear while creating custom validation rules, escalate to Victor in the LP workflow Slack channel immediately — do not batch or wait for the daily sync.'
+      },
     ]
   }
 ];
@@ -438,6 +589,7 @@ function renderGroup(group) {
 
   const thead = document.createElement('thead');
   thead.innerHTML = `<tr>
+    <th class="col-toggle"></th>
     <th class="col-num">#</th>
     <th class="col-name">Deliverable</th>
     <th class="col-bar">Progress</th>
@@ -463,6 +615,15 @@ function renderRow(item, rowNum, group) {
   const pct   = item.total === 0 ? 0 : Math.min(100, Math.round(done / item.total * 100));
 
   const tr = document.createElement('tr');
+
+  // Toggle
+  const detailId = `detail-${item.id}`;
+  const tdToggle = document.createElement('td');
+  tdToggle.className = 'col-toggle';
+  if (item.detail) {
+    tdToggle.innerHTML = `<button class="detail-toggle" data-detail="${detailId}" title="Show details">▸</button>`;
+  }
+  tr.appendChild(tdToggle);
 
   // #
   const tdNum = document.createElement('td');
@@ -512,6 +673,25 @@ function renderRow(item, rowNum, group) {
       <span class="count-total">/ ${item.total.toLocaleString()}</span>
     </div>`;
   tr.appendChild(tdInput);
+
+  // Detail row (hidden until toggled)
+  if (item.detail) {
+    const detailTr = document.createElement('tr');
+    detailTr.className = 'detail-row';
+    const detailTd = document.createElement('td');
+    detailTd.setAttribute('colspan', '7');
+    const panel = document.createElement('div');
+    panel.className = 'detail-panel';
+    panel.id = detailId;
+    panel.innerHTML = item.detail;
+    detailTd.appendChild(panel);
+    detailTr.appendChild(detailTd);
+    // Return both rows as a fragment
+    const frag = document.createDocumentFragment();
+    frag.appendChild(tr);
+    frag.appendChild(detailTr);
+    return frag;
+  }
 
   return tr;
 }
@@ -566,6 +746,16 @@ function updateGlobalStats() {
 //  INPUT HANDLER — live update then debounce save
 // ─────────────────────────────────────────────
 let debounceTimer = null;
+
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.detail-toggle');
+  if (!btn) return;
+  const panel = document.getElementById(btn.dataset.detail);
+  if (!panel) return;
+  const open = panel.classList.toggle('open');
+  btn.classList.toggle('open', open);
+  btn.textContent = open ? '▾' : '▸';
+});
 
 document.addEventListener('change', e => {
   const sel = e.target;
