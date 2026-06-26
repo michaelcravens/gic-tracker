@@ -107,11 +107,13 @@
   }
   .deliverable-table tr:last-child td { border-bottom: none; }
 
-  .col-num   { width: 36px; }
-  .col-name  { width: 38%; }
-  .col-bar   { width: 28%; }
-  .col-badge { width: 100px; }
+  .col-num   { width: 32px; }
+  .col-name  { width: 30%; }
+  .col-bar   { width: 18%; min-width: 120px; }
+  .col-badge { width: 130px; }
+  .col-owner { width: 150px; }
   .col-input { width: 96px; text-align: right; }
+  .col-comment { width: 34px; }
 
   .row-num { color: var(--muted); font-size: 12px; font-weight: 600; }
 
@@ -127,19 +129,31 @@
   .bar-fill.pct-full { background: var(--green); }
   .bar-label { font-size: 11px; color: var(--muted); margin-top: 3px; }
 
-  /* ── BADGE ── */
-  .badge {
-    display: inline-block;
+  /* ── STATUS DROPDOWN ── */
+  .status-select {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1.5px solid;
+    border-radius: 999px;
+    padding: 4px 22px 4px 10px;
+    font-family: 'Montserrat', sans-serif;
     font-size: 10.5px;
     font-weight: 600;
-    padding: 3px 8px;
-    border-radius: 999px;
     text-transform: uppercase;
     letter-spacing: .5px;
+    cursor: pointer;
+    outline: none;
+    width: 100%;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='currentColor' opacity='.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    transition: opacity .2s;
   }
-  .badge-not-started { background: #F3F4F6; color: var(--gray); }
-  .badge-in-progress { background: #FDE8EF; color: var(--brand); }
-  .badge-complete    { background: #D1FAE5; color: #065F46; }
+  .status-select.s-not-started { background-color: #F3F4F6; color: var(--gray);   border-color: #D1D5DB; }
+  .status-select.s-in-progress { background-color: #FDE8EF; color: var(--brand);  border-color: var(--border); }
+  .status-select.s-complete    { background-color: #D1FAE5; color: #065F46;        border-color: #6EE7B7; }
+  .status-select.s-blocked     { background-color: #FEF2F2; color: #991B1B;        border-color: #FECACA; }
+  .status-select.s-na          { background-color: #F3F4F6; color: #9CA3AF;        border-color: #E5E7EB; }
 
   /* ── OWNER SELECT ── */
   .owner-select {
@@ -179,7 +193,6 @@
   .pill-product  { background: #FCE7F3; color: #9D174D; }
   .pill-none     { background: #F3F4F6; color: var(--muted); }
 
-  .col-owner  { width: 120px; }
   .col-toggle { width: 32px; }
 
   /* ── DETAIL PANEL ── */
@@ -209,6 +222,48 @@
   .detail-panel strong { color: var(--brand); font-weight: 600; }
   .detail-panel ul { margin: 6px 0 0 16px; }
   .detail-panel li { margin-bottom: 3px; }
+
+  /* ── COMMENT BUTTON + PANEL ── */
+  .comment-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--muted); font-size: 15px; padding: 2px 4px;
+    border-radius: 4px; transition: color .2s, background .2s;
+    line-height: 1; position: relative;
+  }
+  .comment-btn:hover { color: var(--brand); background: #fde8ef; }
+  .comment-btn.has-comment { color: var(--brand); }
+  .comment-btn.has-comment::after {
+    content: '';
+    position: absolute; top: 1px; right: 1px;
+    width: 6px; height: 6px;
+    border-radius: 50%; background: var(--brand);
+  }
+  .comment-panel {
+    display: none;
+    background: #fdf6f8;
+    padding: 10px 16px 12px 52px;
+    border-top: 1px dashed var(--border);
+  }
+  .comment-panel.open { display: block; }
+  .comment-label {
+    font-size: 11px; font-weight: 600; color: var(--brand);
+    text-transform: uppercase; letter-spacing: .6px; margin-bottom: 5px;
+  }
+  .comment-textarea {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 12.5px;
+    color: var(--text);
+    background: #fff;
+    resize: vertical;
+    min-height: 64px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .comment-textarea:focus { border-color: var(--brand); }
 
   /* ── NUMBER INPUT ── */
   .count-wrap { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
@@ -320,8 +375,8 @@
 // ─────────────────────────────────────────────
 //  CONFIG — replace these with your values
 // ─────────────────────────────────────────────
-const GIST_TOKEN = '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';
-const GIST_ID    = 'abbdbb7f3aa3aebcde43baa76876b0b1';
+const GIST_TOKEN = 'YOUR_GIST_TOKEN_HERE';
+const GIST_ID    = 'YOUR_GIST_ID_HERE';
 const GIST_FILE  = 'gic_tracker.json';
 
 // ─────────────────────────────────────────────
@@ -543,6 +598,18 @@ function getCount(id) { return state[id] || 0; }
 function setCount(id, val) { state[id] = val; }
 function getOwner(id) { return state[id + '_owner'] || ''; }
 function setOwner(id, val) { state[id + '_owner'] = val; }
+function getStatus(id, pct) {
+  if (state[id + '_status'] !== undefined) return state[id + '_status'];
+  return autoStatus(pct);
+}
+function setStatus(id, val) { state[id + '_status'] = val; }
+function autoStatus(pct) {
+  if (pct === 0)   return 'not-started';
+  if (pct === 100) return 'complete';
+  return 'in-progress';
+}
+function getComment(id) { return state[id + '_comment'] || ''; }
+function setComment(id, val) { state[id + '_comment'] = val; }
 
 // ─────────────────────────────────────────────
 //  RENDER
@@ -596,6 +663,7 @@ function renderGroup(group) {
     <th class="col-badge">Status</th>
     <th class="col-owner">Owner</th>
     <th class="col-input">Done / Total</th>
+    <th class="col-comment"></th>
   </tr>`;
   table.appendChild(thead);
 
@@ -646,10 +714,17 @@ function renderRow(item, rowNum, group) {
     <div class="bar-label" id="bar-label-${item.id}">${pct}%</div>`;
   tr.appendChild(tdBar);
 
-  // Badge
+  // Status dropdown
   const tdBadge = document.createElement('td');
   tdBadge.className = 'col-badge';
-  tdBadge.innerHTML = `<span class="badge ${badgeClass(pct)}" id="badge-${item.id}">${badgeText(pct)}</span>`;
+  const statusVal = getStatus(item.id, pct);
+  tdBadge.innerHTML = `<select class="status-select s-${statusVal}" id="badge-${item.id}" data-id="${item.id}" data-manual="false">
+    <option value="not-started"${statusVal==='not-started'?' selected':''}>Not Started</option>
+    <option value="in-progress"${statusVal==='in-progress'?' selected':''}>In Progress</option>
+    <option value="complete"${statusVal==='complete'?' selected':''}>Complete</option>
+    <option value="blocked"${statusVal==='blocked'?' selected':''}>Blocked</option>
+    <option value="na"${statusVal==='na'?' selected':''}>N/A</option>
+  </select>`;
   tr.appendChild(tdBadge);
 
   // Owner
@@ -674,26 +749,51 @@ function renderRow(item, rowNum, group) {
     </div>`;
   tr.appendChild(tdInput);
 
+  // Comment button
+  const commentId = `comment-panel-${item.id}`;
+  const hasComment = !!getComment(item.id);
+  const tdComment = document.createElement('td');
+  tdComment.className = 'col-comment';
+  tdComment.innerHTML = `<button class="comment-btn${hasComment?' has-comment':''}" data-id="${item.id}" data-comment="${commentId}" title="${hasComment?'Edit comment':'Add comment'}">💬</button>`;
+  tr.appendChild(tdComment);
+
   // Detail row (hidden until toggled)
+  // Comment row (always present, hidden until toggled)
+  const commentTr = document.createElement('tr');
+  commentTr.className = 'detail-row';
+  const commentTd = document.createElement('td');
+  commentTd.setAttribute('colspan', '8');
+  const commentPanel = document.createElement('div');
+  commentPanel.className = 'comment-panel';
+  commentPanel.id = commentId;
+  const savedComment = getComment(item.id);
+  commentPanel.innerHTML = `<div class="comment-label">Notes &amp; Comments</div>
+    <textarea class="comment-textarea" data-id="${item.id}" placeholder="Add notes, blockers, links, or context…">${savedComment}</textarea>`;
+  commentTd.appendChild(commentPanel);
+  commentTr.appendChild(commentTd);
+
   if (item.detail) {
     const detailTr = document.createElement('tr');
     detailTr.className = 'detail-row';
     const detailTd = document.createElement('td');
-    detailTd.setAttribute('colspan', '7');
+    detailTd.setAttribute('colspan', '8');
     const panel = document.createElement('div');
     panel.className = 'detail-panel';
     panel.id = detailId;
     panel.innerHTML = item.detail;
     detailTd.appendChild(panel);
     detailTr.appendChild(detailTd);
-    // Return both rows as a fragment
     const frag = document.createDocumentFragment();
     frag.appendChild(tr);
     frag.appendChild(detailTr);
+    frag.appendChild(commentTr);
     return frag;
   }
 
-  return tr;
+  const frag = document.createDocumentFragment();
+  frag.appendChild(tr);
+  frag.appendChild(commentTr);
+  return frag;
 }
 
 // ─────────────────────────────────────────────
@@ -748,26 +848,64 @@ function updateGlobalStats() {
 let debounceTimer = null;
 
 document.addEventListener('click', e => {
-  const btn = e.target.closest('.detail-toggle');
-  if (!btn) return;
-  const panel = document.getElementById(btn.dataset.detail);
-  if (!panel) return;
-  const open = panel.classList.toggle('open');
-  btn.classList.toggle('open', open);
-  btn.textContent = open ? '▾' : '▸';
+  // Detail toggle
+  const dtBtn = e.target.closest('.detail-toggle');
+  if (dtBtn) {
+    const panel = document.getElementById(dtBtn.dataset.detail);
+    if (panel) {
+      const open = panel.classList.toggle('open');
+      dtBtn.classList.toggle('open', open);
+      dtBtn.textContent = open ? '▾' : '▸';
+    }
+    return;
+  }
+  // Comment toggle
+  const cmBtn = e.target.closest('.comment-btn');
+  if (cmBtn) {
+    const panel = document.getElementById(cmBtn.dataset.comment);
+    if (panel) {
+      const open = panel.classList.toggle('open');
+      if (open) panel.querySelector('textarea').focus();
+    }
+    return;
+  }
 });
 
 document.addEventListener('change', e => {
   const sel = e.target;
-  if (!sel.classList.contains('owner-select')) return;
-  const id = sel.dataset.id;
-  setOwner(id, sel.value);
-  sel.classList.toggle('unassigned', !sel.value);
-  clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(saveToGist, 800);
+
+  if (sel.classList.contains('owner-select')) {
+    const id = sel.dataset.id;
+    setOwner(id, sel.value);
+    sel.classList.toggle('unassigned', !sel.value);
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(saveToGist, 800);
+    return;
+  }
+
+  if (sel.classList.contains('status-select')) {
+    const id = sel.dataset.id;
+    setStatus(id, sel.value);
+    sel.className = `status-select s-${sel.value}`;
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(saveToGist, 800);
+    return;
+  }
 });
 
 document.addEventListener('input', e => {
+  // Comment textarea
+  if (e.target.classList.contains('comment-textarea')) {
+    const id = e.target.dataset.id;
+    const val = e.target.value;
+    setComment(id, val);
+    const btn = document.querySelector(`.comment-btn[data-id="${id}"]`);
+    if (btn) btn.classList.toggle('has-comment', !!val);
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(saveToGist, 800);
+    return;
+  }
+
   const input = e.target;
   if (!input.classList.contains('count-input')) return;
 
@@ -780,14 +918,19 @@ document.addEventListener('input', e => {
 
   setCount(id, val);
 
-  // Live-update bar, badge, label
+  // Live-update bar, status, label
   const pct = Math.round(val / total * 100);
   const bar = document.getElementById('bar-' + id);
   bar.style.width = pct + '%';
   bar.className   = 'bar-fill ' + barColorClass(pct);
   document.getElementById('bar-label-' + id).textContent = pct + '%';
-  document.getElementById('badge-' + id).className   = 'badge ' + badgeClass(pct);
-  document.getElementById('badge-' + id).textContent = badgeText(pct);
+  // Only auto-update status if user hasn't manually set it
+  if (state[id + '_status'] === undefined) {
+    const statusSel = document.getElementById('badge-' + id);
+    const auto = autoStatus(pct);
+    statusSel.value     = auto;
+    statusSel.className = `status-select s-${auto}`;
+  }
 
   // Update group pct
   const group = GROUPS.find(g => g.id === gid);
@@ -868,13 +1011,10 @@ async function loadFromGist() {
 
 function applyState(parsed) {
   GROUPS.forEach(g => g.items.forEach(item => {
-    if (parsed[item.id] !== undefined) {
-      state[item.id] = parsed[item.id];
-    }
-    const ownerKey = item.id + '_owner';
-    if (parsed[ownerKey] !== undefined) {
-      state[ownerKey] = parsed[ownerKey];
-    }
+    if (parsed[item.id] !== undefined)                        state[item.id]                    = parsed[item.id];
+    if (parsed[item.id + '_owner']   !== undefined)           state[item.id + '_owner']          = parsed[item.id + '_owner'];
+    if (parsed[item.id + '_status']  !== undefined)           state[item.id + '_status']         = parsed[item.id + '_status'];
+    if (parsed[item.id + '_comment'] !== undefined)           state[item.id + '_comment']        = parsed[item.id + '_comment'];
   }));
   // Re-render with loaded state
   renderAll();
